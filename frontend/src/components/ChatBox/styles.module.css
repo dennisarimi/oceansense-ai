@@ -1,0 +1,40 @@
+.chatbox {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 15px;
+    padding: 20px;
+    width: 600px;
+    height: 70px;
+    background-color: #E8E8E8;
+}
+
+.chatbox p {
+    color: #767676;
+}
+
+.input {
+    border: none;
+    background: transparent;
+    flex: 1;
+    outline: none;
+}
+
+.input:focus {
+  outline: none;
+}
+
+.sendButton {
+    background: none;
+    border: none;
+    font-size: 10rem;
+    padding: 5px;
+    color: grey;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+}
+
+.sendButton:hover {
+    color: black;
+}
