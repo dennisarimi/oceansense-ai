@@ -4,8 +4,9 @@ import {useState} from 'react';
 import Image from 'next/image';
 import styles from './styles.module.css';
 import ChatBox from '@/components/ChatBox/chatbox';
+import ChatMessage from '@/components/ChatMessage/chatmessage';
 
-export default function Home() {
+export default function LandingPage() {
   const [inputValue, setInputValue] = useState('');
   const [queries, setQueries] = useState<string[]>([]);
 
@@ -26,20 +27,22 @@ export default function Home() {
           <h1>Welcome to OceanSense AI</h1>
         </div>
       </div>
-      <div className={styles.chatQueries}>
-        {queries.map((query, index) => (
-          <div key={index} className={styles.query}>
-            {query}
-          </div>
-        ))}
-      </div>
-      <div className={styles.chatbox}>
-        <ChatBox
-          inputValue={inputValue}
-          setInputValue={setInputValue}
-          onSend={handleSend}
-        />
-      </div>
+      {queries.length > 0 && (
+        <div className={styles.chatQueries}>
+          {queries.map((query, index) => (
+            <ChatMessage
+              sender="user"
+              message={query}
+              key={index}
+            />
+          ))}
+        </div>
+      )}
+      <ChatBox
+        inputValue={inputValue}
+        setInputValue={setInputValue}
+        onSend={handleSend}
+      />
     </main>
   );
 }
