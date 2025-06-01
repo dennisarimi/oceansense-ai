@@ -3,10 +3,12 @@
     flex-direction: column;
     align-items: flex-start;
     justify-content: space-between;
-    border-radius: 15px;
-    padding: 20px;
+    padding: 20px 10px;
     width: 768px;
     background-color: #E8E8E8;
+    border-radius: 35px;
+    border-color: #d2d0d0;
+    /* border-width: 1px; */
 
     min-height: 70px;
     max-height: 275px;
@@ -27,6 +29,7 @@
     overflow-y: auto;
     height: auto;
     box-sizing: border-box;
+    padding: 0px 12px;
 }
 
 .textbox:focus {
