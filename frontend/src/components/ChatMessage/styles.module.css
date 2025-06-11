@@ -1,0 +1,17 @@
+.userMessage {
+    align-self: flex-end;
+    border-radius: 30px;
+    padding: 15px 20px;
+    max-width: 60%;
+    background-color: #E8E8E8;
+    word-wrap: break-word;
+}
+
+/* .botMessage {
+    align-self: flex-start;
+    border-radius: 15px;
+    padding: 10px;
+    max-width: 60%;
+    background-color: #E8E8E8;
+    word-wrap: break-word;
+} */

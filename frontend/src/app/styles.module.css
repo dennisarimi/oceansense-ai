@@ -1,0 +1,39 @@
+.main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    box-sizing: border-box;
+    padding-top: 15vh;
+}
+
+.welcome_message {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 600px;
+    height: 300px;
+    align-items: center;
+}
+
+.welcome_message h1 {
+    font-weight: normal;
+    font-size: 34px;
+}
+
+.logo {
+    margin-left: 30px;
+}
+
+.heading {
+    margin-right: 25px;
+}
+
+.chatQueries {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    width: 768px;
+}

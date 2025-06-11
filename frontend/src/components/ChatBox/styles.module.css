@@ -1,0 +1,58 @@
+.chatBox {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 20px 10px;
+    width: 768px;
+    background-color: #E8E8E8;
+    border-radius: 35px;
+    border-color: #d2d0d0;
+    /* border-width: 1px; */
+
+    min-height: 70px;
+    max-height: 275px;
+}
+
+.chatBox p {
+    color: #767676;
+}
+
+.textbox {
+    align-content: center;
+    border: none;
+    background: transparent;
+    width: 100%;
+    outline: none;
+    resize: none;
+    overflow: hidden;
+    overflow-y: auto;
+    height: auto;
+    box-sizing: border-box;
+    padding: 0px 12px;
+}
+
+.textbox:focus {
+  outline: none;
+}
+
+.sendButton {
+    background: none;
+    border: none;
+    padding: 5px;
+    color: grey;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+}
+
+.sendButton:hover {
+    color: black;
+}
+
+.chatBottom {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    align-items: center;
+}
