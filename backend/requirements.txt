@@ -1,9 +1,18 @@
-fastapi
-uvicorn
-transformers
-torch
-chromadb
-pandas
-sentence-transformers
-geopy
-requests
+# Core web stack
+fastapi==0.110.2
+uvicorn[standard]==0.29.0
+
+# Vector store
+chromadb==0.4.24      # first releases with PersistentClient
+
+# Embeddings
+sentence-transformers==2.7.0
+torch==2.2.0          # 2 .x needed by latest sentence-transformers
+
+# Data handling & geocoding
+pandas==2.2.2
+geopy==2.4.1
+requests==2.32.3
+
+# Optional: if you run on Apple Silicon without CUDA, add:
+# accelerate==0.28.0
