@@ -6,20 +6,18 @@ import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
 import styles from './styles.module.css';
 import ChatBox from '@/components/ChatBox/chatbox';
+import useChatSession from '@/hooks/useChatSession';
 
 export default function LandingPage() {
-  const [inputValue, setInputValue] = useState('');
-  const [queries, setQueries] = useState<string[]>([]);
+  const { inputValue, setInputValue, handleSend } = useChatSession();
   const router = useRouter();
 
-  const handleSend = () => {
+  const handleStartChat = () => {
     if (inputValue.trim()) {
-      setQueries((prev) => [...prev, inputValue]);
-      setInputValue('');
-
+      handleSend(); // Stores initial message
+      
       // route to specific chat
       const chatId = uuidv4(); // Generates a unique chat ID
-      sessionStorage.setItem('initialMessage', inputValue); // add user message as query param
       router.push(`/chat/${chatId}`);
     }
   };
@@ -37,7 +35,7 @@ export default function LandingPage() {
       <ChatBox
         inputValue={inputValue}
         setInputValue={setInputValue}
-        onSend={handleSend}
+        onSend={handleStartChat}
       />
     </main>
   );

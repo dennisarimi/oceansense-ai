@@ -5,29 +5,11 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import ChatBox from "@/components/ChatBox/chatbox";
 import ChatMessage from "@/components/ChatMessage/chatmessage";
+import useChatSession from '@/hooks/useChatSession';
 
 export default function ChatPage() {
     const { chatId } = useParams();
-    const searchParams = useSearchParams();
-
-    const [inputValue, setInputValue] = useState('');
-    const [messages, setMessages] = useState<string[]>([]);
-
-    // Read initial message from URL
-    useEffect(() => {
-        const initialMessage = sessionStorage.getItem('initialMessage');
-        if (initialMessage) {
-            setMessages([initialMessage]);
-            // sessionStorage.removeItem('initialMessage');
-        }
-    }, [searchParams]);
-    
-    const handleSend = () => {
-        if (inputValue.trim()) {
-        setMessages((prev) => [...prev, inputValue]);
-        setInputValue('');
-        }
-    };
+    const { messages, inputValue, setInputValue, handleSend } = useChatSession();
     
     return(
         <div className={styles.chatContainer}>
