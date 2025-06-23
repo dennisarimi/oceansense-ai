@@ -2,7 +2,7 @@ import styles from './styles.module.css'
 
 type ChatMessageProps = {
     message: string;
-    sender?: "user" | "bot";
+    sender?: "user" | "assistant";
 };
 
 export default function ChatMessage({ message, sender = "user" }: ChatMessageProps) {
