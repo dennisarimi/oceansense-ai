@@ -1,23 +1,27 @@
 "use client"
 
 import { useRouter } from 'next/navigation';
-import {useState} from 'react';
+import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Image from 'next/image';
 import styles from './styles.module.css';
 import ChatBox from '@/components/ChatBox/chatbox';
-import useChatSession from '@/hooks/useChatSession';
 
 export default function LandingPage() {
-  const { inputValue, setInputValue, handleSend } = useChatSession();
+  const [inputValue, setInputValue] = useState('');
   const router = useRouter();
 
   const handleStartChat = () => {
     if (inputValue.trim()) {
-      handleSend(); // Stores initial message
+      // Send the initial message and immediately navigate
+      const message = inputValue.trim();
+      const chatId = uuidv4();
       
-      // route to specific chat
-      const chatId = uuidv4(); // Generates a unique chat ID
+      // Store the message in sessionStorage before navigating
+      const userMsg = { sender: "user" as const, message };
+      sessionStorage.setItem("chatMessages", JSON.stringify([userMsg]));
+      
+      // Navigate immediately to the chat page
       router.push(`/chat/${chatId}`);
     }
   };

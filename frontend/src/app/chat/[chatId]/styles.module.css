@@ -1,32 +1,75 @@
 .chatContainer {
     display: flex;
     flex-direction: column;
-    height: 100vh;
     width: 768px;
     margin: 0 auto;
+    padding-bottom: 8rem; /* Space for the fixed chatbox */
+    min-height: 100vh;
     justify-content: flex-end;
-    /* position: relative; */
 }
 
 .chatMessages {
     display: flex;
     flex-direction: column;
-    flex: 1;
+    flex-grow: 1;
     gap: 0.5rem;
     padding-top: 1rem;
-    padding-bottom: 8rem;
-    overflow-y: auto;
-    height: 100vh;
+    justify-content: flex-end;
 }
 
 .chatBoxWrapper {
-    /* bottom: 0;
+    position: fixed;
+    bottom: 0;
     left: 0;
-    width: 100%; */
-    background: white;
-    /* padding: 1rem 0; */
-    /* box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05); */
+    right: 0;
+    /* This background is to prevent content from showing through */
+    background: var(--background); 
+    display: flex;
+    justify-self: center;
+    width: 768px;
     border-radius: 35px 35px 0 0;
-    position: absolute;
-    /* z-index: 10; */
+}
+
+.loadingMessage {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 1rem;
+    margin: 0.5rem 0;
+    font-style: italic;
+    color: #6c757d;
+}
+
+.loadingDots {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.loadingDots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6c757d;
+    animation: loadingDots 1.4s infinite ease-in-out;
+}
+
+.loadingDots span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.loadingDots span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes loadingDots {
+    0%, 80%, 100% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }

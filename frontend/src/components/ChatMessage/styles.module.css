@@ -7,11 +7,12 @@
     word-wrap: break-word;
 }
 
-/* .botMessage {
+.botMessage {
     align-self: flex-start;
-    border-radius: 15px;
-    padding: 10px;
-    max-width: 60%;
+    /* border-radius: 15px; */
+    padding-top: 50px;
+    padding-bottom: 50px;
+    /* max-width: 60%;
     background-color: #E8E8E8;
-    word-wrap: break-word;
-} */
+    word-wrap: break-word; */
+}

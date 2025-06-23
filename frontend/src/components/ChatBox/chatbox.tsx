@@ -3,7 +3,13 @@ import {useRef, useEffect} from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 
-export default function ChatBox({inputValue, setInputValue, onSend}) {
+interface ChatBoxProps {
+    inputValue: string;
+    setInputValue: (value: string) => void;
+    onSend: () => void | Promise<void>;
+}
+
+export default function ChatBox({inputValue, setInputValue, onSend}: ChatBoxProps) {
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
     useEffect(() => {
