@@ -1,3 +1,14 @@
-my_env
+# PyTorch source build (must be built from source on macOS Intel — see README)
+pytorch/
 
-chroma_store
+# Virtual environment
+venv/
+
+# ChromaDB vector store (rebuilt via /initialize endpoint)
+chroma_store/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.env

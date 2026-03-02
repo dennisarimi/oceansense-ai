@@ -10,7 +10,11 @@ certifi
 charset-normalizer
 chromadb
 click
+# cmake is required as a build-time dep for PyTorch source build only.
+# Pin below 4.0 — CMake 4.x breaks PyTorch v2.4.1's third-party submodules.
+cmake>=3.18,<4.0
 coloredlogs
+datasets
 distro
 durationpy
 fastapi
@@ -43,7 +47,7 @@ mdurl
 mmh3
 mpmath
 networkx
-numpy<2.0.0
+numpy
 oauthlib
 onnxruntime
 opentelemetry-api
@@ -73,7 +77,7 @@ pyproject_hooks
 python-dateutil
 python-dotenv
 pytz
-PyYAML
+pyyaml
 referencing
 regex
 requests
@@ -84,7 +88,8 @@ rsa
 safetensors
 scikit-learn
 scipy
-sentence-transformers
+# Pin to 3.0.1 — newer versions have import-time breakage with transformers on macOS.
+sentence-transformers==3.0.1
 setuptools
 shellingham
 six
@@ -94,9 +99,12 @@ sympy
 tenacity
 threadpoolctl
 tokenizers
-torch
+# torch is NOT pip-installable on macOS Intel (no prebuilt wheels for x86_64).
+# Must be built from source. See README.md for full build instructions.
+# torch>=2.4.0
 tqdm
-transformers
+# Pin to 4.44.2 — newer versions have a NameError bug (nn not defined) on import.
+transformers==4.44.2
 typer
 typing-inspection
 typing_extensions
@@ -110,7 +118,7 @@ websockets
 wrapt
 zipp
 
-# Nvidia packages (commented out for macOS)
+# Nvidia/CUDA packages — not applicable on macOS. Uncomment only for Linux+CUDA builds.
 # nvidia-cublas-cu12
 # nvidia-cuda-cupti-cu12
 # nvidia-cuda-nvrtc-cu12
