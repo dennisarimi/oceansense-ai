@@ -17,10 +17,18 @@ Follow **all steps below in order**.
 
 ---
 
+## Notes for Non-macOS / Future Environments
+
+- **Linux + CUDA**: Remove the `USE_CUDA=0` flag and uncomment the Nvidia packages in `requirements.txt`. You can likely install a prebuilt `torch` wheel via pip instead of building from source.
+- **Apple Silicon (M1/M2/M3)**: Prebuilt wheels exist for `torch>=2.0` on arm64. Skip the source build entirely and use `pip install torch`.
+- **Do not move or delete the `pytorch/` source directory** — the editable install (`-e .`) resolves `import torch` directly from that folder. If you move it, re-run Step 5 from the new location.
+
+---
+
 ## Step 1 — Clone the repo and set up the virtual environment
 
 ```bash
-git clone <your-repo-url> oceansense-ai
+git clone https://github.com/dennisarimi/oceansense-ai.git
 cd oceansense-ai/backend
 
 python3.12 -m venv venv
@@ -32,15 +40,11 @@ source venv/bin/activate
 
 ---
 
-## Step 2 — Install a CMake 3.x into the venv
-
-CMake 4.x (the current Homebrew default) is **incompatible** with PyTorch v2.4.1's
-third-party submodules. Install a pinned CMake 3.x directly into your venv so it
-takes precedence over the system CMake:
+## Step 2 — Install backend dependencies
 
 ```bash
-pip install "cmake>=3.18,<4.0"
-cmake --version   # should print 3.x.x
+# From the backend/ directory
+pip install -r requirements.txt
 ```
 
 ---
@@ -49,8 +53,9 @@ cmake --version   # should print 3.x.x
 
 ```bash
 # From the backend/ directory
-git clone --branch v2.4.1 --depth 1 https://github.com/pytorch/pytorch.git
+git clone https://github.com/pytorch/pytorch.git
 cd pytorch
+git checkout v2.4.1
 
 git submodule sync
 git submodule update --init --recursive
@@ -61,7 +66,7 @@ git submodule update --init --recursive
 ## Step 4 — Install PyTorch build dependencies
 
 ```bash
-pip install typing_extensions pyyaml numpy setuptools
+# From the pytorch/ directory
 pip install -r requirements.txt
 ```
 
@@ -72,20 +77,22 @@ pip install -r requirements.txt
 This step takes 30–90 minutes depending on your machine. `MAX_JOBS` controls
 parallel compilation — set it to the number of CPU cores you want to use.
 
+> Ensure your none of the directories in your path include spaces in their names otherwise the installation will break while executing.
+
 ```bash
 export CXXFLAGS="-Wno-deprecated-declarations"
 
 USE_CUDA=0 \
 USE_XPU=0 \
 USE_FBGEMM=0 \
-USE_NNPACK=0 \
-USE_QNNPACK=0 \
-USE_PYTORCH_QNNPACK=0 \
 USE_DISTRIBUTED=0 \
 BUILD_TEST=0 \
 MAX_JOBS=8 \
 python -m pip install --no-build-isolation -v -e .
 ```
+<!-- USE_NNPACK=0 \
+USE_QNNPACK=0 \
+USE_PYTORCH_QNNPACK=0 \ -->
 
 **Why these flags?**
 
@@ -98,6 +105,7 @@ python -m pip install --no-build-isolation -v -e .
 | `BUILD_TEST=0` | Skips building test binaries, saving significant build time |
 
 After a successful build you should see:
+
 ```
 Successfully installed torch-2.4.0a0+giteeXXXXXX
 ```
@@ -116,6 +124,7 @@ export TORCH_VERSION_OVERRIDE="2.4.0"
 ```
 
 To make this permanent, add it to your shell profile:
+
 ```bash
 echo 'export TORCH_VERSION_OVERRIDE="2.4.0"' >> ~/.zshrc
 source ~/.zshrc
@@ -123,23 +132,14 @@ source ~/.zshrc
 
 ---
 
-## Step 7 — Install remaining backend dependencies
-
-```bash
-# From the backend/ directory (not pytorch/)
-cd ..
-pip install -r requirements.txt
-```
-
----
-
-## Step 8 — Verify PyTorch is working
+## Step 7 — Verify PyTorch is working
 
 ```bash
 python -c "import torch; print(torch.__version__); print(torch.tensor([1.0, 2.0]))"
 ```
 
 Expected output:
+
 ```
 2.4.0a0+giteeXXXXXX
 tensor([1., 2.])
@@ -159,16 +159,25 @@ uvicorn app.main:app --reload --reload-dir=app
 
 The server will be available at `http://127.0.0.1:8000`.
 
+Look for the following line in the terminal to know the app is ready for use:
+
+```
+INFO:     Application startup complete.
+```
+
 ---
 
 ## Retraining / Reinitialising the Vector Store
 
 1. Delete the `chroma_store/` folder:
+
    ```bash
    rm -rf app/chroma_store
    ```
+
 2. Add or remove dataset files in `app/datasets/`
 3. With the server running, trigger reinitialization:
+
    ```bash
    curl -X POST http://localhost:8000/initialize
    ```
@@ -197,11 +206,3 @@ Make sure `USE_FBGEMM=0` is set in your build command. AppleClang 17 rejects var
 
 **`curl: (28) Failed to connect to localhost port 8000`**
 The server crashed on startup. Check the terminal output for a Python traceback — the actual error will be a few lines above the curl timeout.
-
----
-
-## Notes for Non-macOS / Future Environments
-
-- **Linux + CUDA**: Remove the `USE_CUDA=0` flag and uncomment the Nvidia packages in `requirements.txt`. You can likely install a prebuilt `torch` wheel via pip instead of building from source.
-- **Apple Silicon (M1/M2/M3)**: Prebuilt wheels exist for `torch>=2.0` on arm64. Skip the source build entirely and use `pip install torch`.
-- **Do not move or delete the `pytorch/` source directory** — the editable install (`-e .`) resolves `import torch` directly from that folder. If you move it, re-run Step 5 from the new location.
