@@ -90,19 +90,15 @@ BUILD_TEST=0 \
 MAX_JOBS=8 \
 python -m pip install --no-build-isolation -v -e .
 ```
-<!-- USE_NNPACK=0 \
-USE_QNNPACK=0 \
-USE_PYTORCH_QNNPACK=0 \ -->
 
 **Why these flags?**
 
-| Flag | Reason |
-|------|--------|
-| `USE_CUDA=0` / `USE_XPU=0` | CPU-only build; no GPU on Intel Mac |
-| `USE_FBGEMM=0` | fbgemm uses VLAs that AppleClang 17 rejects as errors |
-| `USE_NNPACK=0` / `USE_QNNPACK=0` / `USE_PYTORCH_QNNPACK=0` | These submodules use `python-peachpy` which breaks on paths with spaces and isn't needed for inference |
-| `USE_DISTRIBUTED=0` | Not needed for single-machine inference |
-| `BUILD_TEST=0` | Skips building test binaries, saving significant build time |
+| Flag                       | Reason                                                      |
+| -------------------------- | ----------------------------------------------------------- |
+| `USE_CUDA=0` / `USE_XPU=0` | CPU-only build; no GPU on Intel Mac                         |
+| `USE_FBGEMM=0`             | fbgemm uses VLAs that AppleClang 17 rejects as errors       |
+| `USE_DISTRIBUTED=0`        | Not needed for single-machine inference                     |
+| `BUILD_TEST=0`             | Skips building test binaries, saving significant build time |
 
 After a successful build you should see:
 

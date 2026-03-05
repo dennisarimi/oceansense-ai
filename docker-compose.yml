@@ -1,0 +1,101 @@
+services:
+
+  # ---------------------------------------------------------------------------
+  # Ollama — LLM inference server
+  # ---------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: oceansense-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list > /dev/null 2>&1 || exit 1"]
+      interval: 60s
+      timeout: 15s
+      retries: 15
+      start_period: 60s
+
+  # Pull mistral automatically on first run, then exit.
+  # Uses a retry loop in case Ollama isn't fully ready when this starts.
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: oceansense-ollama-pull
+    restart: "no"
+    entrypoint: >
+      /bin/sh -c "
+        echo 'Waiting for Ollama to be ready...';
+        until ollama list > /dev/null 2>&1; do
+          echo 'Ollama not ready yet, retrying in 5s...';
+          sleep 5;
+        done;
+        echo 'Pulling mistral...';
+        ollama pull mistral;
+        echo 'Done.';
+      "
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      - ollama
+
+  # ---------------------------------------------------------------------------
+  # Backend — FastAPI + PyTorch
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: oceansense-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_store:/app/app/chroma_store
+      - ./backend/app/datasets:/app/app/datasets:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OLLAMA_HOST=http://ollama:11434
+    env_file:
+      - ./backend/.env
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-pull:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # Frontend — Next.js
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://backend:8000
+    container_name: oceansense-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+
+# ---------------------------------------------------------------------------
+# Volumes
+# ---------------------------------------------------------------------------
+volumes:
+  chroma_store:
+    driver: local
+  ollama_models:
+    driver: local

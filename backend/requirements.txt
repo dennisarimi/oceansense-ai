@@ -10,9 +10,9 @@ certifi
 charset-normalizer
 chromadb
 click
-# cmake is required as a build-time dep for PyTorch source build only.
-# Pin below 4.0 — CMake 4.x breaks PyTorch v2.4.1's third-party submodules.
-cmake>=3.18,<4.0
+# cmake is only needed for local macOS Intel source builds of PyTorch.
+# Not required in Docker (prebuilt wheels are used). Pin below 4.0 for local macOS Intel builds.
+# cmake>=3.18,<4.0
 coloredlogs
 datasets
 distro

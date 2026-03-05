@@ -1,8 +1,11 @@
 import requests
+import os
+
 
 class MistralLLM:
-    def __init__(self, base_url="http://localhost:11434", model_name="mistral"):
-        self.base_url = base_url
+    def __init__(self, base_url=None, model_name="mistral"):
+        self.base_url = base_url or os.getenv(
+            "OLLAMA_HOST", "http://localhost:11434")
         self.model_name = model_name
 
     def generate_answer(self, prompt: str) -> str:

@@ -1,0 +1,191 @@
+#!/bin/bash
+# =============================================================================
+# OceanSense AI — Code Ocean Run Script
+# Starts the full application stack (Ollama, Backend, Frontend) using Docker
+# Compose and verifies each service is healthy before exiting.
+#
+# Code Ocean will execute this script to verify reproducibility.
+# All output is logged to /results/ as required by Code Ocean.
+# =============================================================================
+
+set -euo pipefail
+
+RESULTS_DIR="/results"
+LOG_FILE="$RESULTS_DIR/run.log"
+mkdir -p "$RESULTS_DIR"
+
+# Redirect all output to both terminal and log file
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+echo "=============================================="
+echo " OceanSense AI — Reproducibility Run"
+echo " $(date)"
+echo "=============================================="
+
+# ------------------------------------------------------------------------------
+# 1. Verify Docker is available
+# ------------------------------------------------------------------------------
+echo ""
+echo "[1/6] Checking Docker availability..."
+if ! command -v docker &> /dev/null; then
+    echo "ERROR: Docker is not installed or not on PATH."
+    echo "Please install Docker Desktop: https://www.docker.com/products/docker-desktop/"
+    exit 1
+fi
+
+if ! docker info &> /dev/null; then
+    echo "ERROR: Docker daemon is not running. Please start Docker Desktop."
+    exit 1
+fi
+
+echo "Docker version: $(docker --version)"
+echo "Docker Compose version: $(docker compose version)"
+
+# ------------------------------------------------------------------------------
+# 2. Navigate to project root (where docker-compose.yml lives)
+# ------------------------------------------------------------------------------
+echo ""
+echo "[2/6] Setting up project directory..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_ROOT"
+echo "Working directory: $PROJECT_ROOT"
+
+# Confirm expected files are present
+for f in docker-compose.yml backend/Dockerfile.backend frontend/Dockerfile.frontend; do
+    if [ ! -f "$f" ]; then
+        echo "ERROR: Expected file not found: $f"
+        echo "Please ensure you are running this script from the correct repository."
+        exit 1
+    fi
+done
+
+# ------------------------------------------------------------------------------
+# 3. Build and start all services
+# ------------------------------------------------------------------------------
+echo ""
+echo "[3/6] Building and starting services (this may take several minutes on first run)..."
+echo "      - Ollama (LLM inference server)"
+echo "      - Backend (FastAPI + PyTorch)"
+echo "      - Frontend (Next.js)"
+echo ""
+
+docker compose up -d --build
+
+# ------------------------------------------------------------------------------
+# 4. Wait for all services to become healthy
+# ------------------------------------------------------------------------------
+echo ""
+echo "[4/6] Waiting for services to become healthy..."
+
+wait_for_health() {
+    local service=$1
+    local max_wait=${2:-300}  # default 5 min timeout
+    local elapsed=0
+
+    echo -n "    Waiting for $service"
+    while [ $elapsed -lt $max_wait ]; do
+        status=$(docker compose ps --format json "$service" 2>/dev/null \
+            | python3 -c "import sys,json; data=sys.stdin.read().strip(); \
+              rows=data.split('\n'); \
+              [print(json.loads(r).get('Health','')) for r in rows if r]" 2>/dev/null | head -1)
+
+        if [ "$status" = "healthy" ]; then
+            echo " ✓ healthy"
+            return 0
+        fi
+
+        echo -n "."
+        sleep 5
+        elapsed=$((elapsed + 5))
+    done
+
+    echo " ✗ timed out after ${max_wait}s"
+    echo "ERROR: $service did not become healthy in time."
+    docker compose logs "$service" >> "$RESULTS_DIR/${service}.log" 2>&1
+    return 1
+}
+
+# Ollama gets extra time since it loads a 4GB model
+wait_for_health "ollama" 300
+wait_for_health "backend" 180
+wait_for_health "frontend" 120
+
+# ------------------------------------------------------------------------------
+# 5. Verify the system end-to-end with a test query
+# ------------------------------------------------------------------------------
+echo ""
+echo "[5/6] Running end-to-end verification..."
+
+# Trigger vector store initialisation if chroma store is empty
+echo "    Initialising vector store..."
+INIT_RESPONSE=$(curl -sf -X POST http://localhost:8000/initialize \
+    -H "Content-Type: application/json" \
+    --max-time 120 || echo "FAILED")
+
+if [ "$INIT_RESPONSE" = "FAILED" ]; then
+    echo "    WARNING: /initialize endpoint did not respond. Store may already be initialised."
+else
+    echo "    Vector store initialised: $INIT_RESPONSE"
+fi
+
+# Send a test question to the /ask endpoint
+echo "    Sending test query to /ask endpoint..."
+ASK_RESPONSE=$(curl -sf -X POST http://localhost:8000/ask \
+    -H "Content-Type: application/json" \
+    -d '{"query": "What is ocean temperature?"}' \
+    --max-time 120 || echo "FAILED")
+
+if [ "$ASK_RESPONSE" = "FAILED" ]; then
+    echo "ERROR: /ask endpoint failed to respond."
+    docker compose logs backend >> "$RESULTS_DIR/backend.log" 2>&1
+    exit 1
+fi
+
+echo "    Test query response received."
+echo "$ASK_RESPONSE" | python3 -m json.tool >> "$RESULTS_DIR/test_query_response.json" 2>/dev/null || \
+    echo "$ASK_RESPONSE" >> "$RESULTS_DIR/test_query_response.json"
+
+# ------------------------------------------------------------------------------
+# 6. Collect and save run artifacts to /results/
+# ------------------------------------------------------------------------------
+echo ""
+echo "[6/6] Saving run artifacts to $RESULTS_DIR..."
+
+# Save service status
+docker compose ps > "$RESULTS_DIR/service_status.txt"
+
+# Save logs from each service
+docker compose logs ollama  > "$RESULTS_DIR/ollama.log"  2>&1
+docker compose logs backend > "$RESULTS_DIR/backend.log" 2>&1
+docker compose logs frontend > "$RESULTS_DIR/frontend.log" 2>&1
+
+# Save environment info for reproducibility record
+{
+    echo "=== Run Environment ==="
+    echo "Date: $(date)"
+    echo "OS: $(uname -a)"
+    echo "Docker: $(docker --version)"
+    echo "Docker Compose: $(docker compose version)"
+    echo ""
+    echo "=== Service Versions ==="
+    docker compose images
+} > "$RESULTS_DIR/environment.txt"
+
+echo ""
+echo "=============================================="
+echo " Run complete. All services are healthy."
+echo ""
+echo " Frontend:   http://localhost:3000"
+echo " Backend:    http://localhost:8000"
+echo " API docs:   http://localhost:8000/docs"
+echo ""
+echo " Artifacts saved to: $RESULTS_DIR"
+echo "   - run.log                  Full run log"
+echo "   - test_query_response.json Response from test query"
+echo "   - service_status.txt       Docker service status"
+echo "   - backend.log              Backend container logs"
+echo "   - ollama.log               Ollama container logs"
+echo "   - frontend.log             Frontend container logs"
+echo "   - environment.txt          Environment and version info"
+echo "=============================================="

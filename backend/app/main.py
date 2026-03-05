@@ -3,7 +3,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from .rag_pipeline import RAGPipeline
+import logging
 
+# Filter /health from access logs
+class EndpointFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "/health" not in record.getMessage()
+
+logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 app = FastAPI()
 
 # CORS setup
@@ -29,3 +36,7 @@ def ask_question(q: Question):
 def initialize_dataset():
     success = pipeline.initialize_dataset()
     return {"initialized": success}
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
