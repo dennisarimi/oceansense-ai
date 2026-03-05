@@ -1,91 +1,102 @@
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Dependency directories
-node_modules/
-frontend/node_modules/
-backend/node_modules/
-backend/pytorch/
-
-# Build output
-dist/
-.next/
-out/
-build/
-frontend/.next/
-frontend/out/
-
-# Runtime files
-*.pid
-*.seed
-*.pid.lock
-
-# Static cache
-.cache/
-.next/cache/
-
-# Testing
-coverage/
-*.lcov
-
-# System files
-.DS_Store
-Thumbs.db
-
-# Environment variables
-.env
-.env.*    # Allows for env.dev, env.prod, etc.
-
-# Python cache
+# Python
 __pycache__/
 *.py[cod]
 *.so
-
-# Python virtual environments
-venv/
-env/
-backend/venv/
-backend/.venv/
-
-# Jupyter notebook checkpoints
-.ipynb_checkpoints/
-
-# Docker
-**/.docker/
-**/.dockerignore
-
-# IDEs/editors
-.vscode/
-.idea/
-*.swp
-
-# Compiled C extensions / temporary scripts
 *.egg
 *.egg-info/
 .eggs/
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+coverage.xml
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+env/
+.venv/
+backend/venv/
+backend/.venv/
+
+# PyTorch
+backend/pytorch/
+
+# ChromaDB vector store
+backend/chroma_store/
+backend/app/chroma_store/
+
+# Node / Next.js
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+out/
+frontend/out/
+build/
+dist/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+*.tsbuildinfo
+next-env.d.ts
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+*.log
+logs/
+
+# Cache
+.cache/
+.next/cache/
+
+# Vercel
+.vercel
+
+# Environment variables
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+# Keep example env files so collaborators know what variables are needed
+!.env.example
+!**/.env.example
+
+# Docker
+docker-compose.override.yml
+
+# Testing / coverage
+coverage/
+*.lcov
+
+# System / editor
+.DS_Store
+Thumbs.db
+*.pem
+.vscode/
+.idea/
+*.swp
+*.swo
+*.pid
+*.pid.lock
+*.seed
+
+# Build artifacts
 *.manifest
 *.spec
-
-# Data
-data/raw/
-data/processed/
-
-# NLP intermediate files
-nlp/**/*.pkl
-nlp/**/__pycache__/
-nlp/**/checkpoints/
-nlp/**/logs/
-
-# Optional: Admin panel builds
-admin-panel/build/
-admin-panel/.next/
-admin-panel/node_modules/
-
-# Optional: Local dev helpers
-scripts/*.sh
 *.sqlite
 *.db
+
+# Data — raw data not in source control
+data/raw/
+data/processed/
+nlp/**/*.pkl
+nlp/**/checkpoints/

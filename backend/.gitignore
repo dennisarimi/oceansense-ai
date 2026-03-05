@@ -1,14 +1,27 @@
-# PyTorch source build (must be built from source on macOS Intel — see README)
+# PyTorch source
 pytorch/
 
 # Virtual environment
 venv/
+.venv/
 
-# ChromaDB vector store (rebuilt via /initialize endpoint)
+# ChromaDB vector store
 chroma_store/
+app/chroma_store/
 
 # Python cache
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+.Python
+
+# Environment variables
 .env
+.env.*
+!.env.example
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.coverage

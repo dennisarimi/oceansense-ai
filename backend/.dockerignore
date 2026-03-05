@@ -1,0 +1,58 @@
+# PyTorch source
+pytorch/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# ChromaDB vector store
+chroma_store/
+app/chroma_store/
+
+# Datasets
+app/datasets/
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Git
+.git/
+.gitignore
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Tests
+tests/
+test_*.py
+*_test.py
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Docs
+README.md
+DOCKER.md
+*.md
