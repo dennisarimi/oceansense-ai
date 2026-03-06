@@ -19,7 +19,7 @@
 
 .chatBoxWrapper {
     position: fixed;
-    bottom: 0;
+    bottom: 20px;
     left: 0;
     right: 0;
     /* This background is to prevent content from showing through */
@@ -35,11 +35,11 @@
     align-items: center;
     gap: 0.5rem;
     padding: 1rem;
-    background: #f8f9fa;
+    background: var(--loading-bg);
     border-radius: 1rem;
     margin: 0.5rem 0;
     font-style: italic;
-    color: #6c757d;
+    color: var(--loading-text);
 }
 
 .loadingDots {
@@ -51,7 +51,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #6c757d;
+    background: var(--loading-dot);
     animation: loadingDots 1.4s infinite ease-in-out;
 }
 
