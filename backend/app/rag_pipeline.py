@@ -37,13 +37,15 @@ class RAGPipeline:
         docs = self.retriever.query(query)
         context = "\n".join(docs)
         prompt = f"""[INST] <<SYS>>
-    You are a marine data analyst summarizing time-series oceanographic sensor data. Provide summarized answers that describe patterns or trends.
+    You are a helpful assistant with expertise in marine and oceanographic data analysis.
+    First, determine whether the user's question is related to marine science, oceanography, or sensor data.
+    - If it IS marine-related: use the provided context to summarize time-series oceanographic sensor data, describe patterns or trends, and use domain-appropriate language. Summarize if multiple values are given. Provide trends, not just isolated numbers.
+    - If it is NOT marine-related: answer the question directly and concisely like a normal assistant. Do NOT reference the context below or use marine-specific language. Just give a straightforward answer.
     <</SYS>>
 
     Context:
     {context}
 
     Question: {query}
-    Summarize if multiple values are given. Provide trends, not just isolated numbers.
     [/INST]"""
         return self.llm.generate_answer(prompt)
