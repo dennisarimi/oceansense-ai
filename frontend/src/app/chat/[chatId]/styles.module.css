@@ -19,7 +19,7 @@
 
 .chatBoxWrapper {
     position: fixed;
-    bottom: 20px;
+    bottom: 0;
     left: 0;
     right: 0;
     /* This background is to prevent content from showing through */
@@ -27,7 +27,8 @@
     display: flex;
     justify-self: center;
     width: 768px;
-    border-radius: 35px 35px 0 0;
+    padding-bottom: 20px;
+    z-index: 10;
 }
 
 .loadingMessage {
