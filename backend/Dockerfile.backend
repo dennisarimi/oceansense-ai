@@ -1,13 +1,15 @@
 # =============================================================================
 # OceanSense AI — Backend
-# Uses prebuilt PyTorch 2.4.1 CPU wheels from pytorch.org.
-# Works on x86_64 (Intel/AMD) and ARM64 (Apple Silicon, AWS Graviton).
-# No compilation required — builds in ~5 minutes.
+#
+# Two stages: "dev" and "prod"
+# Selected via: ENV=dev docker compose up --build
 # =============================================================================
 
-FROM python:3.12-slim-bookworm
+# -----------------------------------------------------------------------------
+# Base — shared setup between dev and prod
+# -----------------------------------------------------------------------------
+FROM python:3.12-slim-bookworm AS base
 
-# Runtime system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libgomp1 \
@@ -15,24 +17,40 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install PyTorch CPU-only explicitly before the rest of requirements.
-# Pinned to 2.4.1 — the version this project was developed and tested against.
-# --index-url points to the CPU-only wheel index to avoid pulling large CUDA binaries.
+# Install PyTorch CPU first — cached separately so dep changes don't re-download it
 RUN pip install --no-cache-dir \
     torch \
     --index-url https://download.pytorch.org/whl/cpu
 
-# Install remaining application dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip \
-        && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application source
+# -----------------------------------------------------------------------------
+# Development stage
+# Source code is synced live by docker compose watch.
+# uvicorn runs with --reload so code changes restart the server automatically.
+# -----------------------------------------------------------------------------
+FROM base AS dev
+
 COPY app/ ./app/
 COPY .env* ./
 
-# ---------- create writable Chroma store ----------
-    # RUN mkdir -p /app/chroma_store
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--reload", \
+     "--reload-dir", "/app/app"]
+
+# -----------------------------------------------------------------------------
+# Production stage
+# Source is baked into the image. No reload, no dev tooling.
+# -----------------------------------------------------------------------------
+FROM base AS prod
+
+COPY app/ ./app/
+COPY .env* ./
 
 EXPOSE 8000
 

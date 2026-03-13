@@ -1,76 +1,79 @@
 .chatContainer {
-    display: flex;
-    flex-direction: column;
-    width: 768px;
-    margin: 0 auto;
-    padding-bottom: 8rem; /* Space for the fixed chatbox */
-    min-height: 100vh;
-    justify-content: flex-end;
+  display: flex;
+  flex-direction: column;
+  width: 768px;
+  margin: 0 auto;
+  padding-bottom: 8rem; /* Space for the fixed chatbox */
+  min-height: 100vh;
+  justify-content: flex-end;
 }
 
 .chatMessages {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    gap: 0.5rem;
-    padding-top: 1rem;
-    justify-content: flex-end;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  justify-content: flex-end;
 }
 
 .chatBoxWrapper {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    /* This background is to prevent content from showing through */
-    background: var(--background); 
-    display: flex;
-    justify-self: center;
-    width: 768px;
-    padding-bottom: 20px;
-    z-index: 10;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  /* This background is to prevent content from showing through */
+  background: var(--background);
+  display: flex;
+  justify-self: center;
+  width: 768px;
+  border-radius: 35px 35px 0 0;
+  padding-bottom: 20px;
+  z-index: 10;
 }
 
 .loadingMessage {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem;
-    background: var(--loading-bg);
-    border-radius: 1rem;
-    margin: 0.5rem 0;
-    font-style: italic;
-    color: var(--loading-text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--loading-bg);
+  border-radius: 1rem;
+  margin: 0.5rem 0;
+  font-style: italic;
+  color: var(--loading-text);
 }
 
 .loadingDots {
-    display: flex;
-    gap: 0.25rem;
+  display: flex;
+  gap: 0.25rem;
 }
 
 .loadingDots span {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--loading-dot);
-    animation: loadingDots 1.4s infinite ease-in-out;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--loading-dot);
+  animation: loadingDots 1.4s infinite ease-in-out;
 }
 
 .loadingDots span:nth-child(1) {
-    animation-delay: -0.32s;
+  animation-delay: -0.32s;
 }
 
 .loadingDots span:nth-child(2) {
-    animation-delay: -0.16s;
+  animation-delay: -0.16s;
 }
 
 @keyframes loadingDots {
-    0%, 80%, 100% {
-        transform: scale(0);
-        opacity: 0.5;
-    }
-    40% {
-        transform: scale(1);
-        opacity: 1;
-    }
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
