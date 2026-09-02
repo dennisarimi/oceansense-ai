@@ -1,12 +1,14 @@
 # =============================================================================
 # OceanSense AI — Frontend (Next.js)
-# Standard multi-stage Next.js build.
+#
+# Two stages: "dev" and "prod"
+# Selected via: ENV=dev docker compose up --build
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Stage 1: Dependencies
+# Base — install dependencies (shared)
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS deps
+FROM node:lts-alpine AS base
 
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
@@ -20,29 +22,40 @@ RUN \
     fi
 
 # -----------------------------------------------------------------------------
-# Stage 2: Builder
+# Development stage
+# Runs next dev with hot reload.
+# Source is synced live by docker compose watch.
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS builder
+FROM base AS dev
 
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# next-env.d.ts is auto-generated — copy it if present
-COPY next-env.d.ts* ./
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-# Set the backend API URL at build time.
-# Override with --build-arg NEXT_PUBLIC_API_URL=http://your-backend
-ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
+
+# -----------------------------------------------------------------------------
+# Builder — builds the production Next.js output
+# (intermediate stage, not a final target)
+# -----------------------------------------------------------------------------
+FROM base AS builder
+
+ARG NEXT_PUBLIC_API_URL=http://backend:8000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
+COPY . .
 RUN npm run build
 
 # -----------------------------------------------------------------------------
-# Stage 3: Runtime
-# Serves the built Next.js app using the standalone output.
+# Production stage
+# Serves the built app using Next.js standalone output.
+# Requires next.config.ts to have: output: 'standalone'
 # -----------------------------------------------------------------------------
-FROM node:20-alpine AS runtime
+FROM node:lts-alpine AS prod
 
 WORKDIR /app
 
@@ -52,7 +65,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy built output
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static

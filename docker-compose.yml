@@ -1,7 +1,16 @@
-services:
+# =============================================================================
+# OceanSense AI — Docker Compose
+#
+# Development:  ENV=dev docker compose up --build
+# Production:   docker compose up --build
+#
+# ENV variable switches the build target in both Dockerfiles and controls
+# which volumes are mounted. Defaults to prod if not set.
+# =============================================================================
 
+services:
   # ---------------------------------------------------------------------------
-  # Ollama — LLM inference server
+  # Ollama — LLM inference server (same in dev and prod)
   # ---------------------------------------------------------------------------
   ollama:
     image: ollama/ollama:latest
@@ -13,23 +22,21 @@ services:
       - ollama_models:/root/.ollama
     healthcheck:
       test: ["CMD-SHELL", "ollama list > /dev/null 2>&1 || exit 1"]
-      interval: 60s
+      interval: 15s
       timeout: 15s
       retries: 15
       start_period: 60s
 
-  # Pull mistral automatically on first run, then exit.
-  # Uses a retry loop in case Ollama isn't fully ready when this starts.
+  # Pulls mistral on first run, exits when done
   ollama-pull:
     image: ollama/ollama:latest
     container_name: oceansense-ollama-pull
     restart: "no"
     entrypoint: >
       /bin/sh -c "
-        echo 'Waiting for Ollama to be ready...';
+        echo 'Waiting for Ollama...';
         until ollama list > /dev/null 2>&1; do
-          echo 'Ollama not ready yet, retrying in 5s...';
-          sleep 5;
+          echo 'Retrying in 5s...'; sleep 5;
         done;
         echo 'Pulling mistral...';
         ollama pull mistral;
@@ -42,11 +49,16 @@ services:
 
   # ---------------------------------------------------------------------------
   # Backend — FastAPI + PyTorch
+  #
+  # The Dockerfile.backend has two stages: "dev" and "prod".
+  # ENV=dev selects the dev stage which runs uvicorn --reload.
+  # ENV=prod (default) selects the prod stage.
   # ---------------------------------------------------------------------------
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile.backend
+      target: ${ENV:-prod}
     container_name: oceansense-backend
     restart: unless-stopped
     ports:
@@ -57,6 +69,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - ENV=${ENV:-prod}
     env_file:
       - ./backend/.env
     depends_on:
@@ -66,30 +80,53 @@ services:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 60s
+      interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+    # Dev: mount source so changes are picked up by uvicorn --reload
+    # This block is active in both envs but the dev stage CMD uses --reload
+    develop:
+      watch:
+        - action: sync
+          path: ./backend/app
+          target: /app/app
+          ignore:
+            - __pycache__/
+            - "*.pyc"
 
   # ---------------------------------------------------------------------------
   # Frontend — Next.js
+  #
+  # Same pattern: ENV selects "dev" or "prod" stage in Dockerfile.frontend.
   # ---------------------------------------------------------------------------
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.frontend
+      target: ${ENV:-prod}
       args:
         NEXT_PUBLIC_API_URL: http://backend:8000
     container_name: oceansense-frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
+    environment:
+      - NODE_ENV=${ENV:-production}
+      - NEXT_TELEMETRY_DISABLED=1
+      # In dev, browser talks to backend on localhost directly
+      - NEXT_PUBLIC_API_URL=${ENV:+http://localhost:8000}${ENV:-http://backend:8000}
     depends_on:
       backend:
         condition: service_healthy
-    environment:
-      - NODE_ENV=production
-      - NEXT_TELEMETRY_DISABLED=1
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /app
+          ignore:
+            - node_modules/
+            - .next/
 
 # ---------------------------------------------------------------------------
 # Volumes
