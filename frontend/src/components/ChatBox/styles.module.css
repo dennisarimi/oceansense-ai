@@ -5,9 +5,9 @@
     justify-content: space-between;
     padding: 20px 10px;
     width: 768px;
-    background-color: #E8E8E8;
+    background-color: var(--chatbox-bg);
     border-radius: 35px;
-    border-color: #d2d0d0;
+    border-color: var(--chatbox-border);
     /* border-width: 1px; */
 
     min-height: 70px;
@@ -15,13 +15,14 @@
 }
 
 .chatBox p {
-    color: #767676;
+    color: var(--chatbox-placeholder);
 }
 
 .textbox {
     align-content: center;
     border: none;
     background: transparent;
+    color: var(--textbox-color);
     width: 100%;
     outline: none;
     resize: none;
@@ -40,14 +41,14 @@
     background: none;
     border: none;
     padding: 5px;
-    color: grey;
+    color: var(--send-btn);
     cursor: pointer;
     width: 30px;
     height: 30px;
 }
 
 .sendButton:hover {
-    color: black;
+    color: var(--send-btn-hover);
 }
 
 .chatBottom {

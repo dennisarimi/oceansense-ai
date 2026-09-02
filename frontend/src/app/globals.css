@@ -3,6 +3,17 @@
 :root {
   --background: #ffffff;
   --foreground: #000000;
+  --chat-bubble-user: #E8E8E8;
+  --chat-bubble-bot: transparent;
+  --chatbox-bg: #E8E8E8;
+  --chatbox-border: #d2d0d0;
+  --chatbox-placeholder: #767676;
+  --send-btn: grey;
+  --send-btn-hover: black;
+  --loading-bg: #f8f9fa;
+  --loading-text: #6c757d;
+  --loading-dot: #6c757d;
+  --textbox-color: #000000;
 }
 
 @theme inline {
@@ -16,6 +27,17 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --chat-bubble-user: #2a2a2a;
+    --chat-bubble-bot: transparent;
+    --chatbox-bg: #2a2a2a;
+    --chatbox-border: #3a3a3a;
+    --chatbox-placeholder: #999999;
+    --send-btn: #999999;
+    --send-btn-hover: #ededed;
+    --loading-bg: #1a1a1a;
+    --loading-text: #999999;
+    --loading-dot: #999999;
+    --textbox-color: #ededed;
   }
 }
 

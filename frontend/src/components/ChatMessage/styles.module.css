@@ -3,12 +3,14 @@
     border-radius: 30px;
     padding: 15px 20px;
     max-width: 60%;
-    background-color: #E8E8E8;
+    background-color: var(--chat-bubble-user);
+    color: var(--foreground);
     word-wrap: break-word;
 }
 
 .botMessage {
     align-self: flex-start;
+    color: var(--foreground);
     /* border-radius: 15px; */
     padding-top: 50px;
     padding-bottom: 50px;
