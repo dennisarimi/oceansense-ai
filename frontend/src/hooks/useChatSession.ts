@@ -35,27 +35,48 @@ export default function useChatSession(sessionKey: string = "chatMessages") {
         }
     }, [messages, isSessionLoaded, sessionKey]);
 
+    // Streams a reply for `query`, appending a new assistant bubble on the
+    // first chunk and growing it as more text arrives. `isLoading` stays
+    // true (showing the "thinking" indicator) until that first chunk.
+    //
+    // The setMessages updaters here must stay pure (derive everything from
+    // `prev`, no closure mutation) — React's Strict Mode double-invokes
+    // updater functions in dev to catch impurity, and an updater that
+    // mutates an outer flag will see stale/inconsistent state on the
+    // second invocation.
+    const streamAssistantReply = async (query: string) => {
+        setIsLoading(true);
+        try {
+            await sendMessageToLLM(query, (chunk) => {
+                setIsLoading(false);
+                setMessages((prev) => {
+                    const last = prev[prev.length - 1];
+                    if (!last || last.sender !== "assistant") {
+                        return [...prev, { sender: "assistant", message: chunk }];
+                    }
+                    const updated = [...prev];
+                    updated[updated.length - 1] = { ...last, message: last.message + chunk };
+                    return updated;
+                });
+            });
+        } catch (err) {
+            console.error("Failed to fetch response:", err);
+            setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                const errorMsg: ChatMessage = { sender: "assistant", message: "[Error fetching response]" };
+                return last && last.sender === "assistant"
+                    ? [...prev.slice(0, -1), errorMsg]
+                    : [...prev, errorMsg];
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // Handle initial message (if only one user message exists after loading)
     useEffect(() => {
-        const handleInitialMessage = async () => {
-            if (messages.length === 1 && messages[0].sender === 'user') {
-                setIsLoading(true);
-                try {
-                    const response = await sendMessageToLLM(messages[0].message);
-                    const botMsg: ChatMessage = { sender: "assistant", message: response };
-                    setMessages((prev) => [...prev, botMsg]);
-                } catch (err) {
-                    console.error("Failed to fetch response for initial message:", err);
-                    const errorMsg: ChatMessage = { sender: "assistant", message: "[Error fetching initial response]" };
-                    setMessages((prev) => [...prev, errorMsg]);
-                } finally {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        if (isSessionLoaded) {
-            handleInitialMessage();
+        if (isSessionLoaded && messages.length === 1 && messages[0].sender === 'user') {
+            streamAssistantReply(messages[0].message);
         }
     }, [isSessionLoaded]);
 
@@ -66,19 +87,8 @@ export default function useChatSession(sessionKey: string = "chatMessages") {
         const userMsg: ChatMessage = { sender: "user", message: trimmed };
         setMessages((prev) => [...prev, userMsg]);
         setInputValue("");
-        setIsLoading(true);
 
-        try {
-            const response = await sendMessageToLLM(trimmed);
-            const botMsg: ChatMessage = { sender: "assistant", message: response };
-            setMessages((prev) => [...prev, botMsg]);
-        } catch (err) {
-            console.error("Failed to fetch response:", err);
-            const errorMsg: ChatMessage = { sender: "assistant", message: "[Error fetching response]" };
-            setMessages((prev) => [...prev, errorMsg]);
-        } finally {
-            setIsLoading(false);
-        }
+        await streamAssistantReply(trimmed);
     };
 
     return {

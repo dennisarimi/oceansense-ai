@@ -1,6 +1,7 @@
 # File: app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from .rag_pipeline import RAGPipeline
 import logging
@@ -29,8 +30,7 @@ class Question(BaseModel):
 
 @app.post("/ask")
 def ask_question(q: Question):
-    answer = pipeline.ask(q.query)
-    return {"answer": answer}
+    return StreamingResponse(pipeline.ask_stream(q.query), media_type="text/plain")
 
 @app.post("/initialize")
 def initialize_dataset():

@@ -17,7 +17,7 @@ The LLM (Mistral via Ollama) always gets a structured prompt with:
 import os
 import re
 import logging
-from typing import List, Tuple, Optional
+from typing import Iterator, List, Tuple, Optional
 
 from .chroma_utils import ChromaRetriever
 from .mistral_utils import MistralLLM
@@ -244,7 +244,8 @@ class RAGPipeline:
         summary = ONCClient.dataframe_to_summary(df, parameter, location)
         return [summary], status
 
-    def ask(self, query: str) -> str:
+    def _resolve_context(self, query: str) -> Tuple[str, List[str], str]:
+        """Classify the query and gather any context chunks it needs."""
         intent = classify_query(query)
         logger.info(f"Query intent: {intent} | Query: {query!r}")
 
@@ -271,6 +272,11 @@ class RAGPipeline:
             context_chunks.extend(live_chunks)
             context_chunks.extend(self._retrieve_historical(query))
 
+        return intent, context_chunks, live_status
+
+    def ask(self, query: str) -> str:
+        intent, context_chunks, live_status = self._resolve_context(query)
+
         prompt = _build_prompt(query, context_chunks)
         answer = self.llm.generate_answer(prompt)
 
@@ -279,3 +285,14 @@ class RAGPipeline:
             answer = answer.strip() + f"\n\n_[Data source: {live_status}]_"
 
         return answer
+
+    def ask_stream(self, query: str) -> Iterator[str]:
+        """Same as ask(), but yields answer text chunks as they're generated."""
+        intent, context_chunks, live_status = self._resolve_context(query)
+
+        prompt = _build_prompt(query, context_chunks)
+        for chunk in self.llm.stream_answer(prompt):
+            yield chunk
+
+        if live_status and intent in (QueryIntent.LIVE, QueryIntent.HYBRID):
+            yield f"\n\n_[Data source: {live_status}]_"
