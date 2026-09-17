@@ -1,0 +1,19 @@
+# =============================================================================
+# GPU override — adds an NVIDIA GPU reservation to the ollama service.
+#
+# Usage (host needs an NVIDIA GPU + the NVIDIA Container Toolkit installed):
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+#
+# Not required for normal use — the base docker-compose.yml runs CPU-only
+# and needs no changes on a machine without a GPU.
+# =============================================================================
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

@@ -129,6 +129,48 @@ curl -X POST http://localhost:8000/initialize
 
 ---
 
+## Running on a Rented GPU (live study sessions)
+
+Mistral generation is CPU-bound by default and takes 1-3+ minutes per answer
+on a laptop. For real sessions (as opposed to local dev), run the exact same
+stack on a rented GPU box instead — same `docker-compose.yml`, one override
+file added, no code changes:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+```
+
+`docker-compose.gpu.yml` adds an NVIDIA GPU reservation to the `ollama`
+service. It's an override, not a replacement — the base `docker-compose.yml`
+still runs CPU-only unmodified, so this has no effect on anyone (e.g. a
+paper reviewer) running the project without a GPU.
+
+**Requirements on the rented box:** Docker, the Docker Compose plugin, and
+the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
+(`nvidia-ctk runtime configure --runtime=docker`, then restart Docker).
+Verify GPU passthrough before starting the stack:
+
+```bash
+docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
+```
+
+**`NEXT_PUBLIC_API_URL` must be set before building**, since Next.js bakes
+it into the browser bundle at build time. Point it at whatever public URL
+the box exposes port 8000 on (e.g. a RunPod proxy URL) — not `localhost`
+and not the internal `backend` hostname, since the browser making the
+request is on the participant's machine, not inside the Docker network:
+
+```bash
+NEXT_PUBLIC_API_URL=https://<your-box>-8000.proxy.example.com \
+  docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+```
+
+Tear the stack down (`docker compose down`) and stop/terminate the rented
+box after each session — billing is per instance-hour on most providers
+(RunPod, Vast.ai, Lambda Labs), so cost only accrues while it's running.
+
+---
+
 ## Local Setup (macOS Intel only)
 
 > Use Docker unless you specifically need to run without it.
