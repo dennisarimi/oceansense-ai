@@ -17,7 +17,7 @@ The LLM (Mistral via Ollama) always gets a structured prompt with:
 import os
 import re
 import logging
-from typing import List, Tuple, Optional
+from typing import Dict, Iterator, List, Tuple, Optional
 
 from .chroma_utils import ChromaRetriever
 from .mistral_utils import MistralLLM
@@ -139,7 +139,12 @@ Guidelines:
 """
 
 
-def _build_prompt(query: str, context_chunks: List[str]) -> str:
+# How many prior turns (user + assistant messages combined) to include for
+# conversation memory. Keeps the prompt bounded as a session grows long.
+MAX_HISTORY_MESSAGES = 10
+
+
+def _build_user_turn(query: str, context_chunks: List[str]) -> str:
     if context_chunks:
         context_block = "\n".join(f"  - {c}" for c in context_chunks)
         context_section = f"\nRelevant sensor data context:\n{context_block}\n"
@@ -147,13 +152,26 @@ def _build_prompt(query: str, context_chunks: List[str]) -> str:
         context_section = "\n(No sensor data context available for this query.)\n"
 
     return (
-        f"[INST] <<SYS>>\n{SYSTEM_PROMPT}<</SYS>>\n"
         f"{context_section}\n"
         f"User question: {query}\n\n"
         f"Provide a clear, accurate answer. If multiple sensor readings are given, "
-        f"summarise the trends rather than listing every value.\n"
-        f"[/INST]"
+        f"summarise the trends rather than listing every value."
     )
+
+
+def _build_messages(
+    query: str,
+    context_chunks: List[str],
+    history: List[Dict[str, str]],
+) -> List[Dict[str, str]]:
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for turn in history[-MAX_HISTORY_MESSAGES:]:
+        role = "user" if turn.get("sender") == "user" else "assistant"
+        content = turn.get("message", "")
+        if content:
+            messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": _build_user_turn(query, context_chunks)})
+    return messages
 
 
 # ---------------------------------------------------------------------------
@@ -244,7 +262,8 @@ class RAGPipeline:
         summary = ONCClient.dataframe_to_summary(df, parameter, location)
         return [summary], status
 
-    def ask(self, query: str) -> str:
+    def _resolve_context(self, query: str) -> Tuple[str, List[str], str]:
+        """Classify the query and gather any context chunks it needs."""
         intent = classify_query(query)
         logger.info(f"Query intent: {intent} | Query: {query!r}")
 
@@ -271,11 +290,27 @@ class RAGPipeline:
             context_chunks.extend(live_chunks)
             context_chunks.extend(self._retrieve_historical(query))
 
-        prompt = _build_prompt(query, context_chunks)
-        answer = self.llm.generate_answer(prompt)
+        return intent, context_chunks, live_status
+
+    def ask(self, query: str, history: Optional[List[Dict[str, str]]] = None) -> str:
+        intent, context_chunks, live_status = self._resolve_context(query)
+
+        messages = _build_messages(query, context_chunks, history or [])
+        answer = self.llm.generate_answer(messages)
 
         # Append live status as a footnote if it contains useful info
         if live_status and intent in (QueryIntent.LIVE, QueryIntent.HYBRID):
             answer = answer.strip() + f"\n\n_[Data source: {live_status}]_"
 
         return answer
+
+    def ask_stream(self, query: str, history: Optional[List[Dict[str, str]]] = None) -> Iterator[str]:
+        """Same as ask(), but yields answer text chunks as they're generated."""
+        intent, context_chunks, live_status = self._resolve_context(query)
+
+        messages = _build_messages(query, context_chunks, history or [])
+        for chunk in self.llm.stream_answer(messages):
+            yield chunk
+
+        if live_status and intent in (QueryIntent.LIVE, QueryIntent.HYBRID):
+            yield f"\n\n_[Data source: {live_status}]_"

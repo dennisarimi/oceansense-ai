@@ -1,7 +1,9 @@
 # File: app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from typing import List
 from .rag_pipeline import RAGPipeline
 import logging
 
@@ -24,13 +26,18 @@ app.add_middleware(
 
 pipeline = RAGPipeline(dataset_dir="datasets")
 
+class HistoryTurn(BaseModel):
+    sender: str
+    message: str
+
 class Question(BaseModel):
     query: str
+    history: List[HistoryTurn] = []
 
 @app.post("/ask")
 def ask_question(q: Question):
-    answer = pipeline.ask(q.query)
-    return {"answer": answer}
+    history = [turn.model_dump() for turn in q.history]
+    return StreamingResponse(pipeline.ask_stream(q.query, history=history), media_type="text/plain")
 
 @app.post("/initialize")
 def initialize_dataset():

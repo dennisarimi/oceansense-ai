@@ -74,7 +74,7 @@ class ONCAPIError(Exception):
 
 class ONCClient:
     def __init__(self, token: Optional[str] = None):
-        self.token = token or os.getenv("ONC_TOKEN", "")
+        self.token = token or os.getenv("ONC_TOKEN")
         if not self.token:
             logger.warning(
                 "ONC_TOKEN not set. API calls will fail. "
