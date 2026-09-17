@@ -30,32 +30,69 @@ export default function useChatSession(sessionKey: string = "chatMessages") {
         }
     }, [messages, isSessionLoaded, sessionKey]);
 
-    // Streams a reply for `query`, appending a new assistant bubble on the
-    // first chunk and growing it as more text arrives. `isLoading` stays
-    // true (showing the "thinking" indicator) until that first chunk.
+    // How fast revealed text appears on screen, independent of how fast the
+    // backend actually generates it (a GPU can produce chunks far faster
+    // than is comfortable to read).
+    const REVEAL_MS_PER_CHAR = 15;
+
+    const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+    const appendVisible = (piece: string) => {
+        setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (!last || last.sender !== "assistant") {
+                return [...prev, { sender: "assistant", message: piece }];
+            }
+            const updated = [...prev];
+            updated[updated.length - 1] = { ...last, message: last.message + piece };
+            return updated;
+        });
+    };
+
+    // Streams a reply for `query`. Incoming chunks land in a buffer as fast
+    // as the network delivers them; a separate loop drains that buffer one
+    // character at a time at a fixed pace, so generation speed and display
+    // speed are decoupled. `isLoading` stays true (showing the "thinking"
+    // indicator) until the first character is revealed.
     //
-    // The setMessages updaters here must stay pure (derive everything from
-    // `prev`, no closure mutation) — React's Strict Mode double-invokes
-    // updater functions in dev to catch impurity, and an updater that
-    // mutates an outer flag will see stale/inconsistent state on the
-    // second invocation.
+    // The setMessages updater in appendVisible must stay pure (derive
+    // everything from `prev`, no closure mutation) — React's Strict Mode
+    // double-invokes updater functions in dev to catch impurity.
     const streamAssistantReply = async (query: string, history: ChatMessage[]) => {
         setIsLoading(true);
-        try {
-            await sendMessageToLLM(query, history, (chunk) => {
-                setIsLoading(false);
-                setMessages((prev) => {
-                    const last = prev[prev.length - 1];
-                    if (!last || last.sender !== "assistant") {
-                        return [...prev, { sender: "assistant", message: chunk }];
-                    }
-                    const updated = [...prev];
-                    updated[updated.length - 1] = { ...last, message: last.message + chunk };
-                    return updated;
-                });
+
+        const state: { buffer: string; fetchDone: boolean; fetchError: unknown } = {
+            buffer: "",
+            fetchDone: false,
+            fetchError: null,
+        };
+
+        const revealLoop = async () => {
+            while (state.buffer.length > 0 || !state.fetchDone) {
+                if (state.buffer.length > 0) {
+                    const piece = state.buffer[0];
+                    state.buffer = state.buffer.slice(1);
+                    setIsLoading(false);
+                    appendVisible(piece);
+                }
+                await sleep(REVEAL_MS_PER_CHAR);
+            }
+        };
+
+        const fetchPromise = sendMessageToLLM(query, history, (chunk) => {
+            state.buffer += chunk;
+        })
+            .catch((err) => {
+                state.fetchError = err;
+            })
+            .finally(() => {
+                state.fetchDone = true;
             });
-        } catch (err) {
-            console.error("Failed to fetch response:", err);
+
+        await Promise.all([fetchPromise, revealLoop()]);
+
+        if (state.fetchError) {
+            console.error("Failed to fetch response:", state.fetchError);
             setMessages((prev) => {
                 const last = prev[prev.length - 1];
                 const errorMsg: ChatMessage = { sender: "assistant", message: "[Error fetching response]" };
@@ -63,9 +100,8 @@ export default function useChatSession(sessionKey: string = "chatMessages") {
                     ? [...prev.slice(0, -1), errorMsg]
                     : [...prev, errorMsg];
             });
-        } finally {
-            setIsLoading(false);
         }
+        setIsLoading(false);
     };
 
     // Handle initial message (if only one user message exists after loading)
