@@ -1,11 +1,20 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+export type ChatMessage = {
+  sender: "user" | "assistant";
+  message: string;
+};
+
 /**
  * Streams the assistant's reply, invoking onChunk as each piece of text
  * arrives. Resolves with the full accumulated answer once done.
+ *
+ * `history` is the prior turns in the conversation (not including
+ * `message`) so the model has context from earlier in the session.
  */
 export const sendMessageToLLM = async (
   message: string,
+  history: ChatMessage[],
   onChunk: (chunk: string) => void
 ): Promise<string> => {
   const res = await fetch(`${API_URL}/ask`, {
@@ -13,7 +22,7 @@ export const sendMessageToLLM = async (
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ query: message }),
+    body: JSON.stringify({ query: message, history }),
   });
 
   if (!res.ok || !res.body) throw new Error("Failed to fetch response");

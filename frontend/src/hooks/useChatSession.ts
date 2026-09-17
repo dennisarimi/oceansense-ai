@@ -1,12 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { sendMessageToLLM } from '@/utils/api';
-
-type ChatMessage = {
-  sender: "user" | "assistant";
-  message: string;
-};
+import { sendMessageToLLM, ChatMessage } from '@/utils/api';
 
 export default function useChatSession(sessionKey: string = "chatMessages") {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -44,10 +39,10 @@ export default function useChatSession(sessionKey: string = "chatMessages") {
     // updater functions in dev to catch impurity, and an updater that
     // mutates an outer flag will see stale/inconsistent state on the
     // second invocation.
-    const streamAssistantReply = async (query: string) => {
+    const streamAssistantReply = async (query: string, history: ChatMessage[]) => {
         setIsLoading(true);
         try {
-            await sendMessageToLLM(query, (chunk) => {
+            await sendMessageToLLM(query, history, (chunk) => {
                 setIsLoading(false);
                 setMessages((prev) => {
                     const last = prev[prev.length - 1];
@@ -76,7 +71,7 @@ export default function useChatSession(sessionKey: string = "chatMessages") {
     // Handle initial message (if only one user message exists after loading)
     useEffect(() => {
         if (isSessionLoaded && messages.length === 1 && messages[0].sender === 'user') {
-            streamAssistantReply(messages[0].message);
+            streamAssistantReply(messages[0].message, []);
         }
     }, [isSessionLoaded]);
 
@@ -85,10 +80,11 @@ export default function useChatSession(sessionKey: string = "chatMessages") {
         if (!trimmed || isLoading) return;
 
         const userMsg: ChatMessage = { sender: "user", message: trimmed };
+        const history = messages;
         setMessages((prev) => [...prev, userMsg]);
         setInputValue("");
 
-        await streamAssistantReply(trimmed);
+        await streamAssistantReply(trimmed, history);
     };
 
     return {
